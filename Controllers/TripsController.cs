@@ -167,17 +167,18 @@ namespace Control_de_viajes.Controllers
         // =========================
         // VIAJES DRIVER
         // =========================
-        [HttpGet("driver")]
-        public async Task<IActionResult> GetDriverTrips()
+        [HttpGet("driver/{name}")]
+        public async Task<IActionResult> GetDriverTrips(string name)
         {
             var trips = await _context.Trips
                 .Include(t => t.Tracto)
                 .Include(t => t.Semiremolque)
+                .Where(t => t.DriverName == name)
                 .ToListAsync();
 
             return Ok(trips);
-        }  
+        }
 
-       
+
     }
 }
