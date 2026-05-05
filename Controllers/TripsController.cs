@@ -1,4 +1,6 @@
 ﻿using Control_de_viajes.Data;
+using Microsoft.AspNetCore.Mvc;
+using Control_de_viajes.Data;
 using Control_de_viajes.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,14 +18,15 @@ namespace Control_de_viajes.Controllers
             _context = context;
         }
 
-        // 🔥 CREAR VIAJE
+        // =========================
+        // CREAR VIAJE
+        // =========================
         [HttpPost]
         public async Task<IActionResult> CreateTrip([FromBody] Trip trip)
         {
             try
             {
                 trip.CreatedAt = DateTime.UtcNow;
-                trip.StartDate = trip.StartDate?.ToUniversalTime();
                 trip.Status = "Pendiente";
 
                 var tracto = await _context.Trucks.FindAsync(trip.TractoId);
@@ -50,7 +53,9 @@ namespace Control_de_viajes.Controllers
             }
         }
 
-        // 🔥 LISTAR VIAJES
+        // =========================
+        // LISTAR VIAJES
+        // =========================
         [HttpGet]
         public IActionResult GetTrips(
             string? nro,
@@ -82,7 +87,9 @@ namespace Control_de_viajes.Controllers
             return Ok(query.ToList());
         }
 
-        // 🔥 INICIAR VIAJE
+        // =========================
+        // INICIAR VIAJE
+        // =========================
         [HttpPut("{id}/start")]
         public async Task<IActionResult> StartTrip(int id)
         {
@@ -97,7 +104,9 @@ namespace Control_de_viajes.Controllers
             return Ok("Viaje iniciado");
         }
 
-        // 🔥 FINALIZAR VIAJE (AHORA CORRECTO)
+        // =========================
+        // FINALIZAR VIAJE → REVISION
+        // =========================
         [HttpPut("{id}/finish")]
         public async Task<IActionResult> FinishTrip(int id)
         {
@@ -106,7 +115,6 @@ namespace Control_de_viajes.Controllers
                 var trip = await _context.Trips.FindAsync(id);
                 if (trip == null) return NotFound("Viaje no encontrado");
 
-                // 🔥 NO se aprueba automáticamente
                 trip.Status = "Revision";
                 trip.EndDate = DateTime.UtcNow;
 
@@ -126,7 +134,9 @@ namespace Control_de_viajes.Controllers
             }
         }
 
-        // 🔥 RECHAZAR VIAJE
+        // =========================
+        // RECHAZAR VIAJE
+        // =========================
         [HttpPut("{id}/reject")]
         public async Task<IActionResult> RejectTrip(int id)
         {
@@ -154,7 +164,9 @@ namespace Control_de_viajes.Controllers
             }
         }
 
-        // 🔥 VIAJES DEL DRIVER
+        // =========================
+        // VIAJES DRIVER
+        // =========================
         [HttpGet("driver")]
         public async Task<IActionResult> GetDriverTrips()
         {
@@ -164,6 +176,8 @@ namespace Control_de_viajes.Controllers
                 .ToListAsync();
 
             return Ok(trips);
-        }
+        }  
+
+       
     }
 }
