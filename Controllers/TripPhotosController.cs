@@ -19,18 +19,20 @@ namespace Control_de_viajes.Controllers
 
         // 📸 SUBIR FOTO
         [HttpPost("{tripId}")]
-        public async Task<IActionResult> UploadPhoto(int tripId, IFormFile file, string type)
+        [DisableRequestSizeLimit] // <--- AGREGAR ESTO
+        public async Task<IActionResult> UploadPhoto(int tripId, IFormFile file, [FromQuery] string type) // <--- AGREGAR [FromQuery]
         {
             if (file == null || file.Length == 0)
                 return BadRequest("No se envió ningún archivo");
 
-            var uploadsPath = Path.Combine(_env.WebRootPath, "uploads");
+            // USAR ContentRootPath + wwwroot para ir a la segura en Render
+            var folderPath = Path.Combine(_env.ContentRootPath, "wwwroot", "uploads");
 
-            if (!Directory.Exists(uploadsPath))
-                Directory.CreateDirectory(uploadsPath);
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
 
             var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-            var filePath = Path.Combine(uploadsPath, fileName);
+            var filePath = Path.Combine(folderPath, fileName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
@@ -42,7 +44,7 @@ namespace Control_de_viajes.Controllers
                 TripId = tripId,
                 Url = "/uploads/" + fileName,
                 Type = type,
-                CreatedAt = DateTime.UtcNow // 🔥 CLAVE
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.TripPhotos.Add(photo);

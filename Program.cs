@@ -1,21 +1,34 @@
 using Microsoft.EntityFrameworkCore;
 using Control_de_viajes.Data;
-using Microsoft.Extensions.FileProviders; // <--- AGREGAR ESTO
+using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DB
+// 1. CONFIGURACIÓN DE LÍMITES DE TAMAÑO (Evita errores de conexión al subir fotos pesadas)
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = 100 * 1024 * 1024; // 100MB
+});
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 100 * 1024 * 1024; // 100MB
+});
+
+// 2. BASE DE DATOS (PostgreSQL)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// CORS
+// 3. CORS (Configurado para permitir cualquier origen en producción/desarrollo)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("PermitirReact", policy =>
     {
         policy.AllowAnyOrigin()
-       .AllowAnyHeader()
-       .AllowAnyMethod();
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
@@ -25,32 +38,39 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// --- CONFIGURACIÓN DE ARCHIVOS ESTÁTICOS ---
+// 4. CONFIGURACIÓN DE CARPETAS Y ARCHIVOS ESTÁTICOS
+// Definimos la ruta dentro de wwwroot para que sea accesible públicamente
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");
 
-// 1. Esto sirve archivos de la carpeta wwwroot (estándar)
+// Crear la carpeta si no existe
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+// Permitir servir archivos estáticos (wwwroot es la carpeta por defecto)
 app.UseStaticFiles();
 
-// 2. Esto sirve archivos de tu carpeta personalizada "uploads"
-var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
-
-// Crear la carpeta si no existe para evitar errores al arrancar
-if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
-
-app.UseStaticFiles(new StaticFileOptions
+// 5. MIDDLEWARES
+if (app.Environment.IsDevelopment())
 {
-    FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/uploads"
-});
-
-// --- RESTO DEL MIDDLEWARE ---
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+else
+{
+    // En Render/Producción también solemos habilitar Swagger para pruebas rápidas
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
+
+// El orden de CORS es importante: después de Routing y antes de Authorization
 app.UseCors("PermitirReact");
 
-app.UseSwagger();
-app.UseSwaggerUI();
-
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
