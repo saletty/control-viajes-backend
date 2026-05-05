@@ -1,0 +1,10 @@
+@Control_de_viajes_HostAddress = http://localhost:5015
+
+GET {{Control_de_viajes_HostAddress}}/weatherforecast/
+Accept: application/json
+
+"ConnectionStrings": {
+  "DefaultConnection": "server=mainline.proxy.rlwy.net;port=46717;database=railway;user=root;password=IpjvlSIRYZxRhFstBnqsOzdyZGbQqGNf"
+}
+
+###
