@@ -19,23 +19,29 @@ namespace Control_de_viajes.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest loginUser)
         {
-            var user = _context.Users
-                .FirstOrDefault(u =>
-                    u.Username == loginUser.Username &&
-                    u.Password == loginUser.Password);
-
-            if (user == null)
+            try
             {
-                return Unauthorized(new { message = "Credenciales incorrectas" });
+                var user = _context.Users
+                    .FirstOrDefault(u =>
+                        u.Username == loginUser.Username &&
+                        u.Password == loginUser.Password);
+
+                if (user == null)
+                {
+                    return Unauthorized(new { message = "Credenciales incorrectas" });
+                }
+
+                return Ok(new
+                {
+                    name = user.Name,
+                    role = user.Role,
+                    token = "fake-jwt-token"
+                });
             }
-
-            return Ok(new
+            catch (Exception ex)
             {
-                name = user.Name,
-                role = user.Role,
-                token = "fake-jwt-token"
-            });
-        
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }
