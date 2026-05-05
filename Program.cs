@@ -3,10 +3,11 @@ using Control_de_viajes.Data;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.StaticFiles; // <--- AGREGAR ESTO
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. CONFIGURACIÓN DE LÍMITES DE TAMAÑO (Evita errores de conexión al subir fotos pesadas)
+// 1. LÍMITES DE TAMAÑO (Para fotos de alta resolución y audios)
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
     options.Limits.MaxRequestBodySize = 100 * 1024 * 1024; // 100MB
@@ -17,11 +18,11 @@ builder.Services.Configure<FormOptions>(options =>
     options.MultipartBodyLengthLimit = 100 * 1024 * 1024; // 100MB
 });
 
-// 2. BASE DE DATOS (PostgreSQL)
+// 2. BASE DE DATOS
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 3. CORS (Configurado para permitir cualquier origen en producción/desarrollo)
+// 3. CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("PermitirReact", policy =>
@@ -38,39 +39,29 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 4. CONFIGURACIÓN DE CARPETAS Y ARCHIVOS ESTÁTICOS
-// Definimos la ruta dentro de wwwroot para que sea accesible públicamente
+// 4. CONFIGURACIÓN DE CARPETAS
 var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");
+if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
 
-// Crear la carpeta si no existe
-if (!Directory.Exists(uploadsPath))
+// --- CONFIGURACIÓN DE TIPOS DE ARCHIVO (VITAL PARA AUDIO Y FOTO) ---
+var provider = new FileExtensionContentTypeProvider();
+provider.Mappings[".webm"] = "audio/webm";
+provider.Mappings[".mp3"] = "audio/mpeg";
+provider.Mappings[".jpg"] = "image/jpeg";
+provider.Mappings[".png"] = "image/png";
+
+app.UseStaticFiles(new StaticFileOptions
 {
-    Directory.CreateDirectory(uploadsPath);
-}
-
-// Permitir servir archivos estáticos (wwwroot es la carpeta por defecto)
-app.UseStaticFiles();
+    ContentTypeProvider = provider
+});
 
 // 5. MIDDLEWARES
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
-{
-    // En Render/Producción también solemos habilitar Swagger para pruebas rápidas
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
-
-// El orden de CORS es importante: después de Routing y antes de Authorization
 app.UseCors("PermitirReact");
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
