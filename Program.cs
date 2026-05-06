@@ -27,7 +27,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("PermitirReact", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("https://control-viajes-frontend.vercel.app")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
