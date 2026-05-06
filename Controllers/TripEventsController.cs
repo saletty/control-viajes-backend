@@ -13,17 +13,11 @@ namespace Control_de_viajes.Controllers
         private readonly AppDbContext _context;
         private readonly Cloudinary _cloudinary;
 
-        public TripEventsController(AppDbContext context, IConfiguration config)
+
+        public TripEventsController(AppDbContext context, Cloudinary cloudinary)
         {
             _context = context;
-
-            var account = new Account(
-                config["Cloudinary:CloudName"],
-                config["Cloudinary:ApiKey"],
-                config["Cloudinary:ApiSecret"]
-            );
-
-            _cloudinary = new Cloudinary(account);
+            _cloudinary = cloudinary;
         }
 
         //  SUBIR AUDIO
@@ -37,10 +31,12 @@ namespace Control_de_viajes.Controllers
             {
                 await using var stream = audio.OpenReadStream();
 
-                var uploadParams = new RawUploadParams()
+
+                var uploadParams = new VideoUploadParams()
                 {
                     File = new FileDescription(audio.FileName, stream),
-                    Folder = "trips/audios"
+                    Folder = "trips/audios",
+                    Format = "mp3"
                 };
 
                 var uploadResult = await _cloudinary.UploadAsync(uploadParams);

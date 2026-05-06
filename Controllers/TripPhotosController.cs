@@ -13,17 +13,11 @@ namespace Control_de_viajes.Controllers
         private readonly AppDbContext _context;
         private readonly Cloudinary _cloudinary;
 
-        public TripPhotosController(AppDbContext context, IConfiguration config)
+
+        public TripPhotosController(AppDbContext context, Cloudinary cloudinary)
         {
             _context = context;
-
-            //  CONFIGURACIÓN CLOUDINARY (usa appsettings o variables de entorno)
-            var cloudName = config["Cloudinary:CloudName"];
-            var apiKey = config["Cloudinary:ApiKey"];
-            var apiSecret = config["Cloudinary:ApiSecret"];
-
-            var account = new Account(cloudName, apiKey, apiSecret);
-            _cloudinary = new Cloudinary(account);
+            _cloudinary = cloudinary;
         }
 
         // ==============================
