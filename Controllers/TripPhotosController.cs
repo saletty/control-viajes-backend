@@ -26,7 +26,8 @@ namespace Control_de_viajes.Controllers
                 return BadRequest("No se envió ningún archivo");
 
             // USAR ContentRootPath + wwwroot para ir a la segura en Render
-            var folderPath = Path.Combine(_env.ContentRootPath, "wwwroot", "uploads");
+            
+            var folderPath = Path.Combine(_env.WebRootPath, "uploads");
 
             if (!Directory.Exists(folderPath))
                 Directory.CreateDirectory(folderPath);
@@ -38,6 +39,10 @@ namespace Control_de_viajes.Controllers
             {
                 await file.CopyToAsync(stream);
             }
+
+            //  DEBUG AQUÍ (justo después de guardar)
+            Console.WriteLine("Guardado en: " + filePath);
+            Console.WriteLine("Existe archivo: " + System.IO.File.Exists(filePath));
 
             var photo = new TripPhoto
             {
