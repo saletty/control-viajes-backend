@@ -41,21 +41,28 @@ var app = builder.Build();
 
 // 4. CONFIGURACIÓN DE CARPETAS
 var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");
-if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
 
-// --- CONFIGURACIÓN DE TIPOS DE ARCHIVO (VITAL PARA AUDIO Y FOTO) ---
+if (!Directory.Exists(uploadsPath))
+    Directory.CreateDirectory(uploadsPath);
+
+// --- TIPOS DE ARCHIVO ---
 var provider = new FileExtensionContentTypeProvider();
 provider.Mappings[".webm"] = "audio/webm";
 provider.Mappings[".mp3"] = "audio/mpeg";
 provider.Mappings[".jpg"] = "image/jpeg";
+provider.Mappings[".jpeg"] = "image/jpeg";
 provider.Mappings[".png"] = "image/png";
 
+//  Servir archivos estáticos generales (wwwroot)
+app.UseStaticFiles();
+//  Servir específicamente la carpeta /uploads
 app.UseStaticFiles(new StaticFileOptions
 {
-    ContentTypeProvider = provider
-});
-
-// 5. MIDDLEWARES
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads",
+    ContentTypeProvider = provider,
+    ServeUnknownFileTypes = true
+});// 5. MIDDLEWARES
 app.UseSwagger();
 app.UseSwaggerUI();
 
