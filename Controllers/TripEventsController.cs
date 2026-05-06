@@ -44,7 +44,7 @@ namespace Control_de_viajes.Controllers
                 var ev = new TripEvent
                 {
                     TripId = tripId,
-                    AudioUrl = uploadResult.SecureUrl.ToString(), // 🔥 URL REAL
+                    AudioUrl = uploadResult.SecureUrl.ToString(), //  URL REAL
                     CreatedAt = DateTime.UtcNow
                 };
 

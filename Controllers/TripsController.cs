@@ -1,9 +1,9 @@
 ﻿using Control_de_viajes.Data;
-using Microsoft.AspNetCore.Mvc;
-using Control_de_viajes.Data;
 using Control_de_viajes.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
+
 
 namespace Control_de_viajes.Controllers
 {
@@ -115,7 +115,8 @@ namespace Control_de_viajes.Controllers
                 var trip = await _context.Trips.FindAsync(id);
                 if (trip == null) return NotFound("Viaje no encontrado");
 
-                trip.Status = "Revision";
+                // CAMBIO AQUÍ: De "Revision" a "Aprobado"
+                trip.Status = "Aprobado";
                 trip.EndDate = DateTime.UtcNow;
 
                 var tracto = await _context.Trucks.FindAsync(trip.TractoId);
@@ -126,7 +127,34 @@ namespace Control_de_viajes.Controllers
 
                 await _context.SaveChangesAsync();
 
-                return Ok("Viaje enviado a revisión");
+                return Ok("Viaje aprobado con éxito");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut("{id}/approve")]
+        public async Task<IActionResult> ApproveTrip(int id)
+        {
+            try
+            {
+                var trip = await _context.Trips.FindAsync(id);
+                if (trip == null) return NotFound("Viaje no encontrado");
+
+                trip.Status = "Aprobado";
+                trip.EndDate = DateTime.UtcNow;
+
+                // Liberar vehículos
+                var tracto = await _context.Trucks.FindAsync(trip.TractoId);
+                var semi = await _context.Trucks.FindAsync(trip.SemiremolqueId);
+
+                if (tracto != null) tracto.Estado = "Disponible";
+                if (semi != null) semi.Estado = "Disponible";
+
+                await _context.SaveChangesAsync();
+                return Ok("Viaje aprobado");
             }
             catch (Exception ex)
             {
