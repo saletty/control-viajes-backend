@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Control_de_viajes.Data;
 using Control_de_viajes.Models;
-using Microsoft.EntityFrameworkCore;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 
 namespace Control_de_viajes.Controllers
 {
@@ -10,60 +11,68 @@ namespace Control_de_viajes.Controllers
     public class TripEventsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly Cloudinary _cloudinary;
 
-        public TripEventsController(AppDbContext context)
+        public TripEventsController(AppDbContext context, IConfiguration config)
         {
             _context = context;
+
+            var account = new Account(
+                config["Cloudinary:CloudName"],
+                config["Cloudinary:ApiKey"],
+                config["Cloudinary:ApiSecret"]
+            );
+
+            _cloudinary = new Cloudinary(account);
         }
 
-        // GET: api/TripEvents/{tripId}
-        [HttpGet("{tripId}")]
-        public async Task<IActionResult> GetEvents(int tripId)
-        {
-            var events = await _context.TripEvents
-                .Where(e => e.TripId == tripId)
-                .OrderBy(e => e.CreatedAt)
-                .ToListAsync();
-            return Ok(events);
-        }
-
-        // POST: api/TripEvents/{tripId}
+        //  SUBIR AUDIO
         [HttpPost("{tripId}")]
         public async Task<IActionResult> UploadAudio(int tripId, IFormFile audio)
         {
             if (audio == null || audio.Length == 0)
-                return BadRequest("No hay audio");
+                return BadRequest("No se envió audio");
 
-            // 1. Validar límite directamente en la base de datos
-            var count = await _context.TripEvents.CountAsync(e => e.TripId == tripId);
-            if (count >= 2)
-                return BadRequest("Máximo 2 audios permitidos por viaje");
-
-            // 2. Guardar archivo
-            var fileName = $"{Guid.NewGuid()}.webm";
-            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-
-            if (!Directory.Exists(uploadsPath))
-                Directory.CreateDirectory(uploadsPath);
-
-            var path = Path.Combine(uploadsPath, fileName);
-            using (var stream = new FileStream(path, FileMode.Create))
+            try
             {
-                await audio.CopyToAsync(stream);
+                await using var stream = audio.OpenReadStream();
+
+                var uploadParams = new RawUploadParams()
+                {
+                    File = new FileDescription(audio.FileName, stream),
+                    Folder = "trips/audios"
+                };
+
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+                var ev = new TripEvent
+                {
+                    TripId = tripId,
+                    AudioUrl = uploadResult.SecureUrl.ToString(), // 🔥 URL REAL
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.TripEvents.Add(ev);
+                await _context.SaveChangesAsync();
+
+                return Ok(ev);
             }
-
-            // 3. Guardar en BD
-            var evento = new TripEvent
+            catch (Exception ex)
             {
-                TripId = tripId,
-                AudioUrl = "/uploads/" + fileName,
-                CreatedAt = DateTime.UtcNow
-            };
+                return StatusCode(500, "Error: " + ex.Message);
+            }
+        }
 
-            _context.TripEvents.Add(evento);
-            await _context.SaveChangesAsync();
+        //  OBTENER EVENTOS
+        [HttpGet("{tripId}")]
+        public IActionResult GetEvents(int tripId)
+        {
+            var eventsList = _context.TripEvents
+                .Where(e => e.TripId == tripId)
+                .OrderBy(e => e.CreatedAt)
+                .ToList();
 
-            return Ok(evento);
+            return Ok(eventsList);
         }
     }
 }

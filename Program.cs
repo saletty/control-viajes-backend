@@ -1,9 +1,13 @@
-using Microsoft.EntityFrameworkCore;
+using CloudinaryDotNet;
 using Control_de_viajes.Data;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles; // <--- AGREGAR ESTO
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using System.Security.Principal;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +42,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+builder.Services.AddSingleton(new Cloudinary(new Account(
+    builder.Configuration["Cloudinary:CloudName"],
+    builder.Configuration["Cloudinary:ApiKey"],
+    builder.Configuration["Cloudinary:ApiSecret"]
+)));
 
 // 4. CONFIGURACIÓN DE CARPETAS
 var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");

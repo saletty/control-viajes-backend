@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Control_de_viajes.Data;
 using Control_de_viajes.Models;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 
 namespace Control_de_viajes.Controllers
 {
@@ -9,56 +11,68 @@ namespace Control_de_viajes.Controllers
     public class TripPhotosController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IWebHostEnvironment _env;
+        private readonly Cloudinary _cloudinary;
 
-        public TripPhotosController(AppDbContext context, IWebHostEnvironment env)
+        public TripPhotosController(AppDbContext context, IConfiguration config)
         {
             _context = context;
-            _env = env;
+
+            //  CONFIGURACIÓN CLOUDINARY (usa appsettings o variables de entorno)
+            var cloudName = config["Cloudinary:CloudName"];
+            var apiKey = config["Cloudinary:ApiKey"];
+            var apiSecret = config["Cloudinary:ApiSecret"];
+
+            var account = new Account(cloudName, apiKey, apiSecret);
+            _cloudinary = new Cloudinary(account);
         }
 
-        // 📸 SUBIR FOTO
+        // ==============================
+        //  SUBIR FOTO
+        // ==============================
         [HttpPost("{tripId}")]
-        [DisableRequestSizeLimit] // <--- AGREGAR ESTO
-        public async Task<IActionResult> UploadPhoto(int tripId, IFormFile file, [FromQuery] string type) // <--- AGREGAR [FromQuery]
+        [DisableRequestSizeLimit]
+        public async Task<IActionResult> UploadPhoto(int tripId, IFormFile file, [FromQuery] string type)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("No se envió ningún archivo");
 
-            // USAR ContentRootPath + wwwroot para ir a la segura en Render
-            
-            var folderPath = Path.Combine(_env.WebRootPath, "uploads");
-
-            if (!Directory.Exists(folderPath))
-                Directory.CreateDirectory(folderPath);
-
-            var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-            var filePath = Path.Combine(folderPath, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            try
             {
-                await file.CopyToAsync(stream);
+                await using var stream = file.OpenReadStream();
+
+                var uploadParams = new ImageUploadParams()
+                {
+                    File = new FileDescription(file.FileName, stream),
+                    Folder = "trips/photos"
+                };
+
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+                if (uploadResult.StatusCode != System.Net.HttpStatusCode.OK)
+                    return StatusCode(500, "Error subiendo a Cloudinary");
+
+                var photo = new TripPhoto
+                {
+                    TripId = tripId,
+                    Url = uploadResult.SecureUrl.ToString(), // 🔥 URL REAL
+                    Type = type,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.TripPhotos.Add(photo);
+                await _context.SaveChangesAsync();
+
+                return Ok(photo);
             }
-
-            //  DEBUG AQUÍ (justo después de guardar)
-            Console.WriteLine("Guardado en: " + filePath);
-            Console.WriteLine("Existe archivo: " + System.IO.File.Exists(filePath));
-
-            var photo = new TripPhoto
+            catch (Exception ex)
             {
-                TripId = tripId,
-                Url = "/uploads/" + fileName,
-                Type = type,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.TripPhotos.Add(photo);
-            await _context.SaveChangesAsync();
-
-            return Ok(photo);
+                return StatusCode(500, "Error: " + ex.Message);
+            }
         }
 
-        // 📸 OBTENER FOTOS
+        // ==============================
+        //  OBTENER FOTOS
+        // ==============================
         [HttpGet("{tripId}")]
         public IActionResult GetPhotosByTrip(int tripId)
         {
@@ -70,7 +84,9 @@ namespace Control_de_viajes.Controllers
             return Ok(photos);
         }
 
-        // ❌ ELIMINAR FOTO
+        // ==============================
+        //  ELIMINAR FOTO
+        // ==============================
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePhoto(int id)
         {
@@ -79,17 +95,26 @@ namespace Control_de_viajes.Controllers
             if (photo == null)
                 return NotFound();
 
-            var filePath = Path.Combine(_env.WebRootPath, photo.Url.TrimStart('/'));
-
-            if (System.IO.File.Exists(filePath))
+            try
             {
-                System.IO.File.Delete(filePath);
+                //  EXTRAER PUBLIC ID DESDE URL
+                var uri = new Uri(photo.Url);
+                var segments = uri.AbsolutePath.Split('/');
+                var fileName = segments.Last();
+                var publicId = "trips/photos/" + Path.GetFileNameWithoutExtension(fileName);
+
+                var deleteParams = new DeletionParams(publicId);
+                await _cloudinary.DestroyAsync(deleteParams);
+
+                _context.TripPhotos.Remove(photo);
+                await _context.SaveChangesAsync();
+
+                return Ok("Foto eliminada");
             }
-
-            _context.TripPhotos.Remove(photo);
-            await _context.SaveChangesAsync();
-
-            return Ok("Foto eliminada");
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Error eliminando: " + ex.Message);
+            }
         }
     }
 }
