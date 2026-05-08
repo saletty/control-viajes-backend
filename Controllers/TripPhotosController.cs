@@ -110,5 +110,44 @@ namespace Control_de_viajes.Controllers
                 return StatusCode(500, "Error eliminando: " + ex.Message);
             }
         }
+
+        [HttpPut("update/{id}")]
+        public async Task<IActionResult> UpdatePhoto(int id, [FromForm] IFormFile file)
+        {
+            try
+            {
+                var photo = await _context.TripPhotos.FindAsync(id);
+                if (photo == null) return NotFound("La foto no existe.");
+
+                if (file == null || file.Length == 0)
+                    return BadRequest("No se recibió el archivo.");
+
+                // 1. Carpeta de destino
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+                // 2. Nombre de archivo único
+                string fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                string filePath = Path.Combine(folderPath, fileName);
+
+                // 3. Guardar físicamente
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // 4. Actualizar el modelo (Usando CreatedAt que es el que tienes)
+                photo.Url = $"/uploads/{fileName}";
+                photo.CreatedAt = DateTime.UtcNow; // <--- Aquí usamos el nombre correcto
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Foto corregida", url = photo.Url });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Control_de_viajes.Data; // ajusta si tu namespace es distinto
+using Control_de_viajes.Data; 
 using Control_de_viajes.Models;
 
 namespace Control_de_viajes.Controllers
@@ -16,7 +16,7 @@ namespace Control_de_viajes.Controllers
             _context = context;
         }
 
-        // 🔥 GET: api/trucks
+        //  GET: api/trucks
         [HttpGet]
         public async Task<IActionResult> GetTrucks()
         {

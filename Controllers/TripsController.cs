@@ -104,9 +104,9 @@ namespace Control_de_viajes.Controllers
             return Ok("Viaje iniciado");
         }
 
-        // =========================
-        // FINALIZAR VIAJE → REVISION
-        // =========================
+        // ==========================================
+        // 1. FINALIZAR VIAJE (Acción del Chofer)
+        // ==========================================
         [HttpPut("{id}/finish")]
         public async Task<IActionResult> FinishTrip(int id)
         {
@@ -115,19 +115,12 @@ namespace Control_de_viajes.Controllers
                 var trip = await _context.Trips.FindAsync(id);
                 if (trip == null) return NotFound("Viaje no encontrado");
 
-                // CAMBIO AQUÍ: De "Revision" a "Aprobado"
-                trip.Status = "Aprobado";
+                // El chofer lo manda a revisión, NO se liberan vehículos aquí
+                trip.Status = "Revision";
                 trip.EndDate = DateTime.UtcNow;
 
-                var tracto = await _context.Trucks.FindAsync(trip.TractoId);
-                var semi = await _context.Trucks.FindAsync(trip.SemiremolqueId);
-
-                if (tracto != null) tracto.Estado = "Disponible";
-                if (semi != null) semi.Estado = "Disponible";
-
                 await _context.SaveChangesAsync();
-
-                return Ok("Viaje aprobado con éxito");
+                return Ok("Viaje enviado a revisión administrativa.");
             }
             catch (Exception ex)
             {
@@ -135,6 +128,9 @@ namespace Control_de_viajes.Controllers
             }
         }
 
+        // ==========================================
+        // 2. APROBAR VIAJE (Acción del Admin)
+        // ==========================================
         [HttpPut("{id}/approve")]
         public async Task<IActionResult> ApproveTrip(int id)
         {
@@ -144,9 +140,10 @@ namespace Control_de_viajes.Controllers
                 if (trip == null) return NotFound("Viaje no encontrado");
 
                 trip.Status = "Aprobado";
-                trip.EndDate = DateTime.UtcNow;
+                // Mantenemos la fecha de finalización real
+                if (trip.EndDate == null) trip.EndDate = DateTime.UtcNow;
 
-                // Liberar vehículos
+                // AQUÍ es donde realmente liberamos los vehículos
                 var tracto = await _context.Trucks.FindAsync(trip.TractoId);
                 var semi = await _context.Trucks.FindAsync(trip.SemiremolqueId);
 
@@ -154,7 +151,7 @@ namespace Control_de_viajes.Controllers
                 if (semi != null) semi.Estado = "Disponible";
 
                 await _context.SaveChangesAsync();
-                return Ok("Viaje aprobado");
+                return Ok("Viaje aprobado y unidades liberadas con éxito.");
             }
             catch (Exception ex)
             {
@@ -162,9 +159,9 @@ namespace Control_de_viajes.Controllers
             }
         }
 
-        // =========================
-        // RECHAZAR VIAJE
-        // =========================
+        // ==========================================
+        // 3. RECHAZAR VIAJE (Acción del Admin)
+        // ==========================================
         [HttpPut("{id}/reject")]
         public async Task<IActionResult> RejectTrip(int id)
         {
@@ -173,18 +170,15 @@ namespace Control_de_viajes.Controllers
                 var trip = await _context.Trips.FindAsync(id);
                 if (trip == null) return NotFound("Viaje no encontrado");
 
+                // El estado vuelve a ser algo que el chofer pueda identificar para corregir
                 trip.Status = "Rechazado";
-                trip.EndDate = DateTime.UtcNow;
 
-                var tracto = await _context.Trucks.FindAsync(trip.TractoId);
-                var semi = await _context.Trucks.FindAsync(trip.SemiremolqueId);
-
-                if (tracto != null) tracto.Estado = "Disponible";
-                if (semi != null) semi.Estado = "Disponible";
+                //  IMPORTANTE: NO liberamos vehículos aquí. 
+                // El chofer debe corregir las fotos y volver a enviar.
+                // Las unidades siguen en estado "EnUso".
 
                 await _context.SaveChangesAsync();
-
-                return Ok("Viaje rechazado");
+                return Ok("Viaje rechazado. El conductor deberá corregir la información.");
             }
             catch (Exception ex)
             {
@@ -207,6 +201,6 @@ namespace Control_de_viajes.Controllers
             return Ok(trips);
         }
 
-
+        
     }
 }

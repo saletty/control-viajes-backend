@@ -18,13 +18,13 @@ public class Trip
     public string DriverName { get; set; }
 
 
-    public string? Status { get; set; } // 🔥 opcional
+    public string? Status { get; set; } 
 
     public int TractoId { get; set; }
     public int SemiremolqueId { get; set; }
 
-    public Truck? Tracto { get; set; } // 🔥 opcional
-    public Truck? Semiremolque { get; set; } // 🔥 opcional
+    public Truck? Tracto { get; set; } 
+    public Truck? Semiremolque { get; set; } 
 
     public DateTime CreatedAt { get; set; }
    
