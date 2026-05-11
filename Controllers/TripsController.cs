@@ -49,7 +49,9 @@ namespace Control_de_viajes.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                // Esto te dirá el nombre exacto de la columna o tabla que falla
+                var innerError = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, innerError);
             }
         }
 

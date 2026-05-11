@@ -18,5 +18,6 @@ namespace Control_de_viajes.Data
 
         public DbSet<TripPhoto> TripPhotos { get; set; }
         public DbSet<TripEvent> TripEvents { get; set; }
+        public DbSet<TripVideo> TripVideos { get; set; }
     }
 }
