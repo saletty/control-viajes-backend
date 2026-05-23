@@ -113,7 +113,7 @@ namespace Control_de_viajes.Controllers
             {
                 return StatusCode(
                     500,
-                    "Error: " + ex.Message
+                    ex.InnerException?.Message ?? ex.ToString()
                 );
             }
         }
