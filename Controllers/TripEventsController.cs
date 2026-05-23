@@ -21,41 +21,100 @@ namespace Control_de_viajes.Controllers
         }
 
         //  SUBIR AUDIO
-        [HttpPost("{tripId}")]
-        public async Task<IActionResult> UploadAudio(int tripId, IFormFile audio)
-        {
-            if (audio == null || audio.Length == 0)
-                return BadRequest("No se envió audio");
 
+        [HttpPost("{tripId}")]
+        public async Task<IActionResult> UploadAudio(
+    int tripId,
+    IFormFile? audio,
+    IFormFile? photo)
+        {
             try
             {
-                await using var stream = audio.OpenReadStream();
-
-
-                var uploadParams = new VideoUploadParams()
+                // Debe existir al menos uno
+                if (
+                    (audio == null || audio.Length == 0) &&
+                    (photo == null || photo.Length == 0)
+                )
                 {
-                    File = new FileDescription(audio.FileName, stream),
-                    Folder = "trips/audios",
-                    Format = "mp3"
-                };
+                    return BadRequest(
+                        "Debe enviar audio o foto"
+                    );
+                }
 
-                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+                string? audioUrl = null;
+                string? photoUrl = null;
+
+                // ===== AUDIO =====
+                if (audio != null && audio.Length > 0)
+                {
+                    await using var stream =
+                        audio.OpenReadStream();
+
+                    var uploadParams =
+                        new VideoUploadParams()
+                        {
+                            File = new FileDescription(
+                                audio.FileName,
+                                stream
+                            ),
+                            Folder = "trips/audios",
+                            Format = "mp3"
+                        };
+
+                    var uploadResult =
+                        await _cloudinary.UploadAsync(
+                            uploadParams
+                        );
+
+                    audioUrl =
+                        uploadResult.SecureUrl.ToString();
+                }
+
+                // ===== FOTO =====
+                if (photo != null && photo.Length > 0)
+                {
+                    await using var photoStream =
+                        photo.OpenReadStream();
+
+                    var imageParams =
+                        new ImageUploadParams()
+                        {
+                            File = new FileDescription(
+                                photo.FileName,
+                                photoStream
+                            ),
+                            Folder = "trips/eventos"
+                        };
+
+                    var imageResult =
+                        await _cloudinary.UploadAsync(
+                            imageParams
+                        );
+
+                    photoUrl =
+                        imageResult.SecureUrl.ToString();
+                }
 
                 var ev = new TripEvent
                 {
                     TripId = tripId,
-                    AudioUrl = uploadResult.SecureUrl.ToString(), //  URL REAL
+                    AudioUrl = audioUrl,
+                    PhotoUrl = photoUrl,
                     CreatedAt = DateTime.UtcNow
                 };
 
                 _context.TripEvents.Add(ev);
+
                 await _context.SaveChangesAsync();
 
                 return Ok(ev);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Error: " + ex.Message);
+                return StatusCode(
+                    500,
+                    "Error: " + ex.Message
+                );
             }
         }
 
