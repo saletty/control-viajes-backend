@@ -84,8 +84,25 @@ namespace Control_de_viajes.Controllers
             if (!string.IsNullOrEmpty(status) && status != "all")
                 query = query.Where(t => t.Status == status);
 
-            var result = await query.ToListAsync();
-            return Ok(result);
+            var result = await query
+                .Select(t => new
+                {
+                    t.Id,
+                    t.Nro,
+                    t.DriverName,
+                    t.Origin,
+                    t.Destination,
+                    t.Status,
+                    t.StartDate,
+                    t.Tracto,
+                    t.Semiremolque,
+
+                    HasEvents = _context.TripEvents
+                        .Any(e => e.TripId == t.Id)
+                })
+                .ToListAsync();
+
+                        return Ok(result);
         }
 
         // =========================
