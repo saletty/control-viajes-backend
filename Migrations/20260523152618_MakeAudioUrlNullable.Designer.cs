@@ -3,6 +3,7 @@ using System;
 using Control_de_viajes.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Control_de_viajes.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523152618_MakeAudioUrlNullable")]
+    partial class MakeAudioUrlNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,19 +39,7 @@ namespace Control_de_viajes.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<double?>("Latitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<double?>("Longitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("Observation")
-                        .HasColumnType("text");
-
                     b.Property<string>("PhotoUrl")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Reason")
                         .HasColumnType("text");
 
                     b.Property<int>("TripId")
@@ -59,6 +50,35 @@ namespace Control_de_viajes.Migrations
                     b.HasIndex("TripId");
 
                     b.ToTable("TripEvents");
+                });
+
+            modelBuilder.Entity("Control_de_viajes.Models.TripPhoto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("TripId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TripId");
+
+                    b.ToTable("TripPhotos");
                 });
 
             modelBuilder.Entity("Control_de_viajes.Models.TripVideo", b =>
@@ -193,48 +213,19 @@ namespace Control_de_viajes.Migrations
                     b.ToTable("Trips");
                 });
 
-            modelBuilder.Entity("TripPhoto", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CaptureDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<double?>("Latitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<double?>("Longitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<int>("TripId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TripId");
-
-                    b.ToTable("TripPhotos");
-                });
-
             modelBuilder.Entity("Control_de_viajes.Models.TripEvent", b =>
                 {
                     b.HasOne("Trip", null)
                         .WithMany("Events")
+                        .HasForeignKey("TripId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Control_de_viajes.Models.TripPhoto", b =>
+                {
+                    b.HasOne("Trip", null)
+                        .WithMany("Photos")
                         .HasForeignKey("TripId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -257,15 +248,6 @@ namespace Control_de_viajes.Migrations
                     b.Navigation("Semiremolque");
 
                     b.Navigation("Tracto");
-                });
-
-            modelBuilder.Entity("TripPhoto", b =>
-                {
-                    b.HasOne("Trip", null)
-                        .WithMany("Photos")
-                        .HasForeignKey("TripId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Trip", b =>

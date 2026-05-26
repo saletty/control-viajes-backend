@@ -12,20 +12,17 @@ namespace Control_de_viajes.Controllers
     {
         private readonly AppDbContext _context;
         private readonly Cloudinary _cloudinary;
-
-
         public TripPhotosController(AppDbContext context, Cloudinary cloudinary)
         {
             _context = context;
             _cloudinary = cloudinary;
         }
 
-        // ==============================
         //  SUBIR FOTO
-        // ==============================
         [HttpPost("{tripId}")]
         [DisableRequestSizeLimit]
-        public async Task<IActionResult> UploadPhoto(int tripId, IFormFile file, [FromQuery] string type)
+        public async Task<IActionResult> UploadPhoto(int tripId,IFormFile file,[FromQuery] string type,[FromForm] double? latitude,
+            [FromForm] double? longitude,[FromForm] DateTime? captureDate)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("No se envió ningún archivo");
@@ -48,9 +45,12 @@ namespace Control_de_viajes.Controllers
                 var photo = new TripPhoto
                 {
                     TripId = tripId,
-                    Url = uploadResult.SecureUrl.ToString(), // 🔥 URL REAL
+                    Url = uploadResult.SecureUrl.ToString(),
                     Type = type,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    Latitude = latitude,
+                    Longitude = longitude,
+                    CaptureDate = captureDate ?? DateTime.UtcNow
                 };
 
                 _context.TripPhotos.Add(photo);
@@ -64,9 +64,7 @@ namespace Control_de_viajes.Controllers
             }
         }
 
-        // ==============================
         //  OBTENER FOTOS
-        // ==============================
         [HttpGet("{tripId}")]
         public IActionResult GetPhotosByTrip(int tripId)
         {
@@ -78,9 +76,8 @@ namespace Control_de_viajes.Controllers
             return Ok(photos);
         }
 
-        // ==============================
+
         //  ELIMINAR FOTO
-        // ==============================
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePhoto(int id)
         {
@@ -96,7 +93,6 @@ namespace Control_de_viajes.Controllers
                 var segments = uri.AbsolutePath.Split('/');
                 var fileName = segments.Last();
                 var publicId = "trips/photos/" + Path.GetFileNameWithoutExtension(fileName);
-
                 var deleteParams = new DeletionParams(publicId);
                 await _cloudinary.DestroyAsync(deleteParams);
 

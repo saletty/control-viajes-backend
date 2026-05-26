@@ -24,10 +24,14 @@ namespace Control_de_viajes.Controllers
 
         [HttpPost("{tripId}")]
         public async Task<IActionResult> UploadAudio(
-    int tripId,
-    IFormFile? audio,
-    IFormFile? photo)
-        {
+        int tripId,
+        IFormFile? audio,
+        IFormFile? photo,
+        [FromForm] string? reason,
+        [FromForm] string? observation,
+        [FromForm] double? latitude,
+        [FromForm] double? longitude)
+            {
             try
             {
                 // Debe existir al menos uno
@@ -98,8 +102,16 @@ namespace Control_de_viajes.Controllers
                 var ev = new TripEvent
                 {
                     TripId = tripId,
+
                     AudioUrl = audioUrl,
                     PhotoUrl = photoUrl,
+
+                    Reason = reason,
+                    Observation = observation,
+
+                    Latitude = latitude,
+                    Longitude = longitude,
+
                     CreatedAt = DateTime.UtcNow
                 };
 
