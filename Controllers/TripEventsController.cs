@@ -30,7 +30,8 @@ namespace Control_de_viajes.Controllers
         [FromForm] string? reason,
         [FromForm] string? observation,
         [FromForm] double? latitude,
-        [FromForm] double? longitude)
+        [FromForm] double? longitude,
+        [FromForm] DateTime? captureDate)
             {
             try
             {
@@ -102,16 +103,13 @@ namespace Control_de_viajes.Controllers
                 var ev = new TripEvent
                 {
                     TripId = tripId,
-
                     AudioUrl = audioUrl,
                     PhotoUrl = photoUrl,
-
                     Reason = reason,
                     Observation = observation,
-
                     Latitude = latitude,
                     Longitude = longitude,
-
+                    CaptureDate = captureDate,
                     CreatedAt = DateTime.UtcNow
                 };
 

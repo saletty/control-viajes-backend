@@ -10,6 +10,7 @@
         public string? Observation { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
+        public DateTime? CaptureDate { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }
