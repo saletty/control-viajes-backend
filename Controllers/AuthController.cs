@@ -43,5 +43,33 @@ namespace Control_de_viajes.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpPost("login-driver")]
+        public IActionResult LoginDriver([FromBody] DriverLoginRequest request)
+        {
+            try
+            {
+                var user = _context.Users
+                    .FirstOrDefault(u =>
+                        u.Username == request.Carnet &&
+                        u.Role == "Conductor");
+
+                if (user == null)
+                {
+                    return Unauthorized(new { message = "Carnet incorrecto" });
+                }
+
+                return Ok(new
+                {
+                    name = user.Name,
+                    role = user.Role,
+                    token = "fake-jwt-token"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }
