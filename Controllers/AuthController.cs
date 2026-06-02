@@ -49,20 +49,23 @@ namespace Control_de_viajes.Controllers
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(request?.Carnet))
+                    return Unauthorized(new { message = "Carnet incorrecto" });
+
                 var user = _context.Users
-                    .FirstOrDefault(u =>
-                        u.Username == request.Carnet &&
-                        u.Role == "Conductor");
+                    .FirstOrDefault(u => u.Username == request.Carnet.Trim());
 
                 if (user == null)
-                {
                     return Unauthorized(new { message = "Carnet incorrecto" });
-                }
+
+                // Bloquear acceso a cuentas administrativas por esta vía
+                if (user.Role == "Operaciones" || user.Role == "Admin")
+                    return Unauthorized(new { message = "Carnet incorrecto" });
 
                 return Ok(new
                 {
                     name = user.Name,
-                    role = user.Role,
+                    role = "Conductor",
                     token = "fake-jwt-token"
                 });
             }
