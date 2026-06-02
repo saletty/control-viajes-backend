@@ -85,7 +85,7 @@ namespace Control_de_viajes.Controllers
                 query = query.Where(t => t.Status == status);
 
             var result = await query
-                .OrderByDescending(t => t.Id)
+                .OrderByDescending(t => t.CreatedAt)
                 .Select(t => new
                 {
                     t.Id,
