@@ -42,6 +42,38 @@ namespace Control_de_viajes.Controllers
             }
         }
 
+        [HttpGet("conductors")]
+        public async Task<IActionResult> GetConductors()
+        {
+            try
+            {
+                var conductors = await _context.Users
+                    .Where(u => u.Role == "Conductor")
+                    .OrderBy(u => u.Name)
+                    .Select(u => new { u.Id, u.Name })
+                    .ToListAsync();
+
+                var activeDriverNames = await _context.Trips
+                    .Where(t => t.Status != "Aprobado")
+                    .Select(t => t.DriverName)
+                    .Distinct()
+                    .ToListAsync();
+
+                var result = conductors.Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    InUse = activeDriverNames.Contains(c.Name)
+                });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
         [HttpPost("login-driver")]
         public async Task<IActionResult> LoginDriver([FromBody] DriverLoginRequest request)
         {
