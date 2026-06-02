@@ -22,6 +22,16 @@ namespace Control_de_viajes.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Índice para login admin (búsqueda por Username)
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .HasDatabaseName("IX_Users_Username");
+
+            // Índice para login conductor (búsqueda por Role + Password/Carnet)
+            modelBuilder.Entity<User>()
+                .HasIndex(u => new { u.Role, u.Password })
+                .HasDatabaseName("IX_Users_Role_Password");
+
             // CONFIGURACIÓN PARA POSTGRESQL: 
             // Convierte automáticamente todos los DateTime a UTC para evitar el error de 'Kind=Unspecified'
             var dateTimeConverter = new ValueConverter<DateTime, DateTime>(

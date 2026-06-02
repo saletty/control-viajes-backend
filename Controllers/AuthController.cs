@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Control_de_viajes.Data;
 using Control_de_viajes.Models;
-using System.Linq;
 
 namespace Control_de_viajes.Controllers
 {
@@ -17,19 +17,17 @@ namespace Control_de_viajes.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest loginUser)
+        public async Task<IActionResult> Login([FromBody] LoginRequest loginUser)
         {
             try
             {
-                var user = _context.Users
-                    .FirstOrDefault(u =>
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u =>
                         u.Username == loginUser.Username &&
                         u.Password == loginUser.Password);
 
                 if (user == null)
-                {
                     return Unauthorized(new { message = "Credenciales incorrectas" });
-                }
 
                 return Ok(new
                 {
@@ -45,15 +43,15 @@ namespace Control_de_viajes.Controllers
         }
 
         [HttpPost("login-driver")]
-        public IActionResult LoginDriver([FromBody] DriverLoginRequest request)
+        public async Task<IActionResult> LoginDriver([FromBody] DriverLoginRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request?.Carnet))
                     return Unauthorized(new { message = "Carnet incorrecto" });
 
-                var user = _context.Users
-                    .FirstOrDefault(u =>
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u =>
                         u.Password == request.Carnet.Trim() &&
                         u.Role == "Conductor");
 
