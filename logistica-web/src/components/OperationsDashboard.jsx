@@ -42,7 +42,8 @@ export default function OperationsDashboard() {
       if (!res.ok) throw new Error("Error en backend");
 
       const data = await res.json();
-      setTrips(Array.isArray(data) ? data : []);
+      const sorted = Array.isArray(data) ? [...data].sort((a, b) => b.id - a.id) : [];
+      setTrips(sorted);
     } catch (error) {
       console.error("ERROR:", error);
       setTrips([]);
