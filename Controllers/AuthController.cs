@@ -53,13 +53,11 @@ namespace Control_de_viajes.Controllers
                     return Unauthorized(new { message = "Carnet incorrecto" });
 
                 var user = _context.Users
-                    .FirstOrDefault(u => u.Username == request.Carnet.Trim());
+                    .FirstOrDefault(u =>
+                        u.Password == request.Carnet.Trim() &&
+                        u.Role == "Conductor");
 
                 if (user == null)
-                    return Unauthorized(new { message = "Carnet incorrecto" });
-
-                // Bloquear acceso a cuentas administrativas por esta vía
-                if (user.Role == "Operaciones" || user.Role == "Admin")
                     return Unauthorized(new { message = "Carnet incorrecto" });
 
                 return Ok(new
