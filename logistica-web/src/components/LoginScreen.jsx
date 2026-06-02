@@ -45,7 +45,7 @@ const LoginScreen = () => {
               onClick={() => setUserType('driver')}
               className="w-full bg-[#6B6B6B] text-white py-4 px-6 rounded-2xl font-bold text-base hover:bg-[#555555] active:scale-95 transition-all shadow-sm"
             >
-              Acceso Choferes
+              Acceso Conductores
             </button>
           </div>
         </div>
@@ -110,7 +110,7 @@ const LoginScreen = () => {
             </div>
           </div>
 
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Acceso Choferes</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Acceso Conductores</h2>
           <p className="text-gray-400 text-sm mb-6">Ingresa tu número de carnet</p>
 
           {error && (
