@@ -36,14 +36,14 @@ const LoginScreen = () => {
           <div className="space-y-3">
             <button
               onClick={() => setUserType('operations')}
-              className="w-full bg-gray-900 text-white py-4 px-6 rounded-2xl font-bold text-base hover:bg-black active:scale-95 transition-all shadow-sm"
+              className="w-full bg-[#C0359A] text-white py-4 px-6 rounded-2xl font-bold text-base hover:bg-[#a02d82] active:scale-95 transition-all shadow-sm"
             >
               Acceso Administrativo
             </button>
 
             <button
               onClick={() => setUserType('driver')}
-              className="w-full bg-blue-600 text-white py-4 px-6 rounded-2xl font-bold text-base hover:bg-blue-700 active:scale-95 transition-all shadow-sm"
+              className="w-full bg-[#6B6B6B] text-white py-4 px-6 rounded-2xl font-bold text-base hover:bg-[#555555] active:scale-95 transition-all shadow-sm"
             >
               Acceso Choferes
             </button>
@@ -141,7 +141,7 @@ const LoginScreen = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-base hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-300 shadow-sm"
+              className="w-full bg-[#6B6B6B] text-white py-4 rounded-2xl font-bold text-base hover:bg-[#555555] active:scale-95 transition-all disabled:bg-gray-300 shadow-sm"
             >
               {loading ? "Verificando..." : "Ingresar"}
             </button>
@@ -275,7 +275,7 @@ const LoginScreen = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold text-base hover:bg-black active:scale-95 transition-all disabled:bg-gray-300 shadow-sm"
+              className="w-full bg-[#C0359A] text-white py-4 rounded-2xl font-bold text-base hover:bg-[#a02d82] active:scale-95 transition-all disabled:bg-gray-300 shadow-sm"
             >
               {loading ? "Verificando..." : "Iniciar Sesión"}
             </button>
