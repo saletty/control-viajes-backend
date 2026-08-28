@@ -171,10 +171,16 @@ namespace Control_de_viajes.Controllers
             if (trip == null) return NotFound("Viaje no encontrado");
 
             trip.Status = "Rechazado";
-            // Las unidades NO se liberan hasta que el chofer corrija las fotos/videos
+
+            // Liberación de Unidades
+            var tracto = await _context.Trucks.FindAsync(trip.TractoId);
+            var semi = await _context.Trucks.FindAsync(trip.SemiremolqueId);
+
+            if (tracto != null) tracto.Estado = "Disponible";
+            if (semi != null) semi.Estado = "Disponible";
 
             await _context.SaveChangesAsync();
-            return Ok("Viaje rechazado para corrección.");
+            return Ok("Viaje rechazado para corrección. Unidades liberadas.");
         }
 
         // =========================
