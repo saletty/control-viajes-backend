@@ -54,7 +54,7 @@ namespace Control_de_viajes.Controllers
         }
 
         // =========================
-        // LISTAR VIAJES (Filtros Admin)
+        // LISTAR VIAJES (Filtros Admin + Paginación)
         // =========================
         [HttpGet]
         public async Task<IActionResult> GetTrips(
@@ -62,7 +62,9 @@ namespace Control_de_viajes.Controllers
             string? driver,
             string? status,
             string? tracto,
-            string? semiremolque)
+            string? semiremolque,
+            int page = 1,
+            int pageSize = 10)
         {
             var query = _context.Trips
                 .Include(t => t.Tracto)
@@ -84,26 +86,37 @@ namespace Control_de_viajes.Controllers
             if (!string.IsNullOrEmpty(status) && status != "all")
                 query = query.Where(t => t.Status == status);
 
-            var result = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .Select(t => new
-                {
-                    t.Id,
-                    t.Nro,
-                    t.DriverName,
-                    t.Origin,
-                    t.Destination,
-                    t.Status,
-                    t.StartDate,
-                    t.Tracto,
-                    t.Semiremolque,
+            // Conteo total para calcular páginas en React
+            var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 
-                    HasEvents = _context.TripEvents
-                        .Any(e => e.TripId == t.Id)
-                })
-                .ToListAsync();
+            
+           var result = await query
+            .OrderByDescending(t => Convert.ToInt32(t.Nro))
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(t => new
+            {
+                t.Id,
+                t.Nro,
+                t.DriverName,
+                t.Origin,
+                t.Destination,
+                t.Status,
+                t.StartDate,
+                t.Tracto,
+                t.Semiremolque,
+                HasEvents = _context.TripEvents.Any(e => e.TripId == t.Id)
+            })
+            .ToListAsync();
 
-                        return Ok(result);
+            return Ok(new
+            {
+                TotalItems = totalItems,
+                TotalPages = totalPages,
+                CurrentPage = page,
+                Items = result
+            });
         }
 
         // =========================

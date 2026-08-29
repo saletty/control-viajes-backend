@@ -16,6 +16,42 @@ namespace Control_de_viajes.Controllers
             _context = context;
         }
 
+        [HttpPost("create-driver")]
+        public async Task<IActionResult> CreateDriver([FromBody] CreateDriverDto dto)
+        {
+            // 1. Validar que no exista un usuario registrado con ese mismo carnet (Password)
+            var carnetExists = await _context.Users.AnyAsync(u => u.Password == dto.Carnet.Trim());
+            if (carnetExists) 
+            {
+                return BadRequest(new { message = "Ya existe un conductor registrado con este Carnet/CI." });
+            }
+
+            // 2. Extraer solo el primer nombre para el Username de inicio de sesión
+            var firstName = dto.FullName.Trim().Split(' ')[0];
+
+            // 3. Crear el nuevo usuario conductor
+            var newUser = new User
+            {
+                Username = firstName,  
+                Password = dto.Carnet.Trim(),
+                Name = dto.FullName.Trim(),
+                Role = "Driver"
+            };
+
+            _context.Users.Add(newUser);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { 
+                message = "Conductor registrado con éxito.", 
+                user = new {
+                    newUser.Id,
+                    newUser.Username,
+                    newUser.Name,
+                    newUser.Role
+                }
+            });
+        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest loginUser)
         {

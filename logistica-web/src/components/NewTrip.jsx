@@ -24,29 +24,41 @@ export default function NewTrip() {
   const [showDriverDropdown, setShowDriverDropdown] = useState(false);
   const driverRef = useRef(null);
 
+  // ESTADOS PARA MODALES
+  const [showDriverModal, setShowDriverModal] = useState(false);
+  const [showTruckModal, setShowTruckModal] = useState(false);
+
+  // FORMULARIO NUEVO CONDUCTOR
+  const [newDriver, setNewDriver] = useState({ fullName: '', carnet: '' });
+  const [loadingDriver, setLoadingDriver] = useState(false);
+
+  // FORMULARIO NUEVO VEHÍCULO
+  const [newTruck, setNewTruck] = useState({ placa: '', tipo: 'Tracto' });
+  const [loadingTruck, setLoadingTruck] = useState(false);
+
+  const fetchTrucks = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/Trucks`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setTractos(data.filter(t => t.tipo === 'Tracto'));
+      setSemis(data.filter(t => t.tipo === 'Semiremolque'));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchDrivers = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/Auth/conductors`);
+      if (!res.ok) return;
+      setDrivers(await res.json());
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
-    const fetchTrucks = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/Trucks`);
-        if (!res.ok) return;
-        const data = await res.json();
-        setTractos(data.filter(t => t.tipo === 'Tracto'));
-        setSemis(data.filter(t => t.tipo === 'Semiremolque'));
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    const fetchDrivers = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/Auth/conductors`);
-        if (!res.ok) return;
-        setDrivers(await res.json());
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
     fetchTrucks();
     fetchDrivers();
   }, []);
@@ -73,7 +85,6 @@ export default function NewTrip() {
     setShowDriverDropdown(false);
   };
 
-  // Filtrar por búsqueda, disponibles primero (alfabético), en viaje al final
   const filteredDrivers = drivers
     .filter(d => d.name.toLowerCase().includes(driverSearch.toLowerCase()))
     .sort((a, b) => {
@@ -81,6 +92,81 @@ export default function NewTrip() {
       if (!a.inUse && b.inUse) return -1;
       return a.name.localeCompare(b.name);
     });
+
+  const ordenar = (arr) =>
+    [...arr].sort((a, b) => {
+      if (a.estado === 'Disponible' && b.estado === 'EnUso') return -1;
+      if (a.estado === 'EnUso' && b.estado === 'Disponible') return 1;
+      return a.placa.localeCompare(b.placa);
+    });
+
+  // CREAR CHOFER (API)
+  const handleCreateDriver = async (e) => {
+    e.preventDefault();
+    try {
+      setLoadingDriver(true);
+      const res = await fetch(`${API_URL}/api/Auth/create-driver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDriver),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.message || 'Error al crear conductor');
+        return;
+      }
+
+      await fetchDrivers(); // Recargar lista
+      setForm({ ...form, driverName: newDriver.fullName });
+      setDriverSearch(newDriver.fullName);
+      setNewDriver({ fullName: '', carnet: '' });
+      setShowDriverModal(false);
+      alert('Conductor creado y seleccionado automáticamente');
+    } catch (error) {
+      console.error(error);
+      alert('Error de conexión');
+    } finally {
+      setLoadingDriver(false);
+    }
+  };
+
+  // CREAR PLACA (API)
+  const handleCreateTruck = async (e) => {
+    e.preventDefault();
+    try {
+      setLoadingTruck(true);
+      const res = await fetch(`${API_URL}/api/Trucks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTruck),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.message || 'Error al crear placa');
+        return;
+      }
+
+      const createdTruck = await res.json();
+      await fetchTrucks(); // Recargar lista
+
+      if (createdTruck.tipo === 'Tracto') {
+        setTractoId(createdTruck.id);
+      } else {
+        setSemiremolqueId(createdTruck.id);
+      }
+
+      setNewTruck({ placa: '', tipo: 'Tracto' });
+      setShowTruckModal(false);
+      alert('Placa registrada correctamente');
+    } catch (error) {
+      console.error(error);
+      alert('Error de conexión');
+    } finally {
+      setLoadingTruck(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,7 +182,6 @@ export default function NewTrip() {
 
     try {
       setLoading(true);
-
       const res = await fetch(`${API_URL}/api/Trips`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,7 +198,6 @@ export default function NewTrip() {
 
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("ERROR BACKEND:", errorText);
         alert(errorText);
         return;
       }
@@ -127,18 +211,20 @@ export default function NewTrip() {
     }
   };
 
-    const ordenar = (arr) =>
-  [...arr].sort((a, b) => {
-    if (a.estado === 'Disponible' && b.estado === 'EnUso') return -1;
-    if (a.estado === 'EnUso' && b.estado === 'Disponible') return 1;
-    return a.placa.localeCompare(b.placa);
-  });
-
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center py-10">
-      <div className="bg-white rounded-2xl border p-8 w-full max-w-2xl">
-
-        <h1 className="text-xl font-semibold mb-6">Crear Nuevo Viaje</h1>
+    <div className="min-h-screen bg-gray-50 flex justify-center py-10 px-4">
+      <div className="bg-white rounded-2xl border p-8 w-full max-w-2xl shadow-sm">
+        
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-xl font-semibold">Crear Nuevo Viaje</h1>
+          <button
+            type="button"
+            onClick={() => setShowTruckModal(true)}
+            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-lg font-medium border"
+          >
+            + Registrar Placa
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -152,9 +238,19 @@ export default function NewTrip() {
             required
           />
 
-          {/* CONDUCTOR — dropdown buscable */}
+          {/* CONDUCTOR */}
           <div className="relative" ref={driverRef}>
-            <label className="block text-sm text-gray-600 mb-1">Conductor</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm text-gray-600">Conductor</label>
+              <button
+                type="button"
+                onClick={() => setShowDriverModal(true)}
+                className="text-xs text-blue-600 font-medium hover:underline"
+              >
+                + Nuevo Conductor
+              </button>
+            </div>
+            
             <input
               type="text"
               placeholder="Buscar conductor..."
@@ -192,17 +288,10 @@ export default function NewTrip() {
                 ))}
               </div>
             )}
-
-            {showDriverDropdown && driverSearch && filteredDrivers.length === 0 && (
-              <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl shadow-lg mt-1 px-4 py-3 text-sm text-gray-400">
-                No se encontró ningún conductor
-              </div>
-            )}
           </div>
 
           {/* TRACTO + SEMI */}
           <div className="grid grid-cols-2 gap-4">
-
             <div>
               <label className="block text-sm text-gray-600 mb-1">Placa del Tracto</label>
               <select
@@ -236,7 +325,6 @@ export default function NewTrip() {
                 ))}
               </select>
             </div>
-
           </div>
 
           {/* ORIGEN + DESTINO */}
@@ -292,6 +380,105 @@ export default function NewTrip() {
 
         </form>
       </div>
+
+      {/* MODAL CREAR CHOFER */}
+      {showDriverModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-bold mb-4">Registrar Nuevo Conductor</h2>
+            <form onSubmit={handleCreateDriver} className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Nombre Completo</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Juan Carlos Pérez"
+                  value={newDriver.fullName}
+                  onChange={(e) => setNewDriver({ ...newDriver, fullName: e.target.value })}
+                  className="input"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Carnet de Identidad / CI (Contraseña)</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 8945123"
+                  value={newDriver.carnet}
+                  onChange={(e) => setNewDriver({ ...newDriver, carnet: e.target.value })}
+                  className="input"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDriverModal(false)}
+                  className="w-full border py-2.5 rounded-xl text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loadingDriver}
+                  className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700"
+                >
+                  {loadingDriver ? 'Guardando...' : 'Guardar Conductor'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CREAR VEHÍCULO / PLACA */}
+      {showTruckModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-bold mb-4">Registrar Nueva Placa</h2>
+            <form onSubmit={handleCreateTruck} className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Tipo de Unidad</label>
+                <select
+                  value={newTruck.tipo}
+                  onChange={(e) => setNewTruck({ ...newTruck, tipo: e.target.value })}
+                  className="input"
+                >
+                  <option value="Tracto">Tracto</option>
+                  <option value="Semiremolque">Semiremolque</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Número de Placa</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 4059-XYZ"
+                  value={newTruck.placa}
+                  onChange={(e) => setNewTruck({ ...newTruck, placa: e.target.value })}
+                  className="input"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTruckModal(false)}
+                  className="w-full border py-2.5 rounded-xl text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loadingTruck}
+                  className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700"
+                >
+                  {loadingTruck ? 'Guardando...' : 'Guardar Placa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

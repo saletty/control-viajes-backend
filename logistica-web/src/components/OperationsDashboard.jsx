@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, LogOut, Eye, Check, X } from 'lucide-react';
+import { Truck, LogOut, Eye, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { logout } from "../utils/auth"; 
 import { useAuth } from '../context/AuthContext';
 import API_URL from "../api";
@@ -12,6 +12,8 @@ export default function OperationsDashboard() {
   const [loading, setLoading] = useState(false);
   const { user, logout } = useAuth();
   const isAdmin = user?.role === "Admin";
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({
     driver: '',
     tracto: '',
@@ -38,14 +40,16 @@ export default function OperationsDashboard() {
       if (filters.semiremolque) params.append("semiremolque", filters.semiremolque);
       if (filters.status !== "all") params.append("status", filters.status);
 
+      params.append("page", page.toString());
+      params.append("pageSize", "10");
+
       const res = await fetch(`${API_URL}/api/trips?${params}`);
       if (!res.ok) throw new Error("Error en backend");
 
       const data = await res.json();
-      const sorted = Array.isArray(data)
-        ? [...data].sort((a, b) => (parseInt(b.nro) || 0) - (parseInt(a.nro) || 0))
-        : [];
-      setTrips(sorted);
+    
+      setTrips(data.items || []);
+      setTotalPages(data.totalPages || 1);
     } catch (error) {
       console.error("ERROR:", error);
       setTrips([]);
@@ -56,7 +60,8 @@ export default function OperationsDashboard() {
 
   useEffect(() => {
     fetchTrips();
-  }, [filters]);
+  }, [filters, page]);
+
 
   const approveTrip = async (id) => {
   try {
@@ -260,8 +265,31 @@ export default function OperationsDashboard() {
               )}
             </tbody>
           </table>
+
+          <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+            <span className="text-xs text-gray-500 font-medium">
+              Página <strong className="text-gray-900">{page}</strong> de <strong className="text-gray-900">{totalPages}</strong>
+            </span>
+            <div className="flex gap-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(p - 1, 1))}
+                className="flex items-center gap-1 px-3 py-1.5 border rounded-xl text-xs font-semibold bg-white text-gray-700 disabled:opacity-40 hover:bg-gray-100 transition shadow-sm"
+              >
+                <ChevronLeft size={14} /> Anterior
+              </button>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => Math.min(p + 1, totalPages))}
+                className="flex items-center gap-1 px-3 py-1.5 border rounded-xl text-xs font-semibold bg-white text-gray-700 disabled:opacity-40 hover:bg-gray-100 transition shadow-sm"
+              >
+                Siguiente <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
-    </div>
+    
   );
 }
