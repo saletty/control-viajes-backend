@@ -67,6 +67,7 @@ export default function NewTrip() {
   };
 
   const selectDriver = (driver) => {
+    if (driver.inUse) return;
     setForm({ ...form, driverName: driver.name });
     setDriverSearch(driver.name);
     setShowDriverDropdown(false);
@@ -171,6 +172,7 @@ export default function NewTrip() {
                   <button
                     key={d.id}
                     type="button"
+                    disabled={d.inUse}
                     onMouseDown={() => selectDriver(d)}
                     className={`w-full text-left px-4 py-2.5 text-sm flex justify-between items-center hover:bg-gray-50 transition-colors ${
                       d.inUse ? 'text-gray-400' : 'text-gray-900'
