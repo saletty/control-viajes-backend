@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Truck, LogOut, Eye, Check, X, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
-import { logout } from "../utils/auth"; 
 import { useAuth } from '../context/AuthContext';
 import API_URL from "../api";
 
@@ -14,6 +13,7 @@ export default function OperationsDashboard() {
   const isAdmin = user?.role === "Admin";
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedTripToDelete, setSelectedTripToDelete] = useState(null);
   const [filters, setFilters] = useState({
     driver: '',
     tracto: '',
@@ -30,17 +30,18 @@ export default function OperationsDashboard() {
     Rechazado: "bg-red-100 text-red-700",
   };
 
-  const deleteTrip = async (id) => {
-  if (!window.confirm("¿Estás seguro de que deseas eliminar este viaje?")) return;
+  const confirmDeleteTrip = async () => {
+  if (!selectedTripToDelete) return;
 
   try {
-    const res = await fetch(`${API_URL}/api/trips/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_URL}/api/trips/${selectedTripToDelete.id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(await res.text());
+    setSelectedTripToDelete(null);
     fetchTrips();
   } catch (error) {
     alert("Error al eliminar: " + error.message);
   }
-  };
+};
 
   const fetchTrips = async () => {
     try {
@@ -175,6 +176,12 @@ export default function OperationsDashboard() {
               <option value="all">Todos los Estados</option>
               {Object.keys(statusStyles).map(s => <option key={s} value={s}>{s}</option>)}
             </select>
+            <button
+              onClick={() => setFilters({ driver: '', tracto: '', semiremolque: '', nro: '', status: 'all' })}
+              className="px-3 py-2 text-xs font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 border rounded-xl transition-all flex items-center justify-center gap-1.5"
+            >
+              <RotateCcw size={14} /> Limpiar
+            </button>
           </div>
         </div>
 
@@ -282,9 +289,9 @@ export default function OperationsDashboard() {
                                 <X size={18} />
                               </button>
 
-                              {/* ELIMINAR */}
+                              {/* BOTÓN ELIMINAR */}
                               <button 
-                                onClick={() => deleteTrip(trip.id)}
+                                onClick={() => setSelectedTripToDelete(trip)}
                                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                 title="Eliminar viaje"
                               >
@@ -323,6 +330,39 @@ export default function OperationsDashboard() {
           </div>
         </div>
         </div>
+        {/* --- INICIO DEL MODAL DE ELIMINACIÓN --- */}
+      {selectedTripToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-100">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                ¿Eliminar viaje?
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Esta acción no se puede deshacer. Se eliminará el viaje con factura <strong className="text-gray-900 font-semibold">N° {selectedTripToDelete.nro || 'S/N'}</strong>.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setSelectedTripToDelete(null)}
+                className="w-1/2 py-2.5 border rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDeleteTrip}
+                className="w-1/2 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition shadow-sm"
+              >
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     
   );

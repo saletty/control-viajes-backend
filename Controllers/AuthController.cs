@@ -35,7 +35,7 @@ namespace Control_de_viajes.Controllers
                 Username = firstName,  
                 Password = dto.Carnet.Trim(),
                 Name = dto.FullName.Trim(),
-                Role = "Driver"
+                Role = "Conductor"
             };
 
             _context.Users.Add(newUser);
