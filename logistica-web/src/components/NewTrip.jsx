@@ -127,8 +127,12 @@ export default function NewTrip() {
     }
   };
 
-  const ordenar = (arr) =>
-    [...arr].sort((a, b) => (a.estado === 'Disponible' ? -1 : 1));
+    const ordenar = (arr) =>
+  [...arr].sort((a, b) => {
+    if (a.estado === 'Disponible' && b.estado === 'EnUso') return -1;
+    if (a.estado === 'EnUso' && b.estado === 'Disponible') return 1;
+    return a.placa.localeCompare(b.placa);
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center py-10">
