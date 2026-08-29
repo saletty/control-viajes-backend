@@ -54,7 +54,9 @@ namespace Control_de_viajes.Controllers
                     .ToListAsync();
 
                 var activeDriverNames = await _context.Trips
-                    .Where(t => t.Status != "Aprobado")
+                    .Where(t => t.Status == "Pendiente" ||
+                        t.Status == "EnRuta" ||
+                        t.Status == "Revision")
                     .Select(t => t.DriverName)
                     .Distinct()
                     .ToListAsync();
