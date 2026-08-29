@@ -239,6 +239,19 @@ namespace Control_de_viajes.Controllers
             return Ok("Viaje eliminado correctamente.");
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetTripById(int id)
+        {
+            var trip = await _context.Trips
+                .Include(t => t.Tracto)
+                .Include(t => t.Semiremolque)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (trip == null) return NotFound("Viaje no encontrado");
+
+            return Ok(trip);
+        }
+
         // =========================
         // VIAJES DEL CHOFER
         // =========================

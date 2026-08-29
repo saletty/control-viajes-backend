@@ -9,6 +9,7 @@ import RegisterStart from "./components/RegisterStart";
 import TripDetails from "./components/TripDetails";
 import RegisterArrival from "./components/RegisterArrival";
 import EventReport from "./components/EventReport";
+import EditTrip from './components/EditTrip';
 
 function App() {
   const { user } = useAuth();
@@ -37,6 +38,8 @@ function App() {
         {/* OTROS */}
         <Route path="/new-trip" element={<NewTrip />} />
         <Route path="/camera/:tripId/:type" element={<CameraUpload />} />
+        <Route path="/edit-trip/:id" element={<EditTrip />} />
+        
         
         
         {/* REDIRECCIÓN INICIAL */}
