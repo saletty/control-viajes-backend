@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, LogOut, Eye, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Truck, LogOut, Eye, Check, X, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { logout } from "../utils/auth"; 
 import { useAuth } from '../context/AuthContext';
 import API_URL from "../api";
@@ -28,6 +28,18 @@ export default function OperationsDashboard() {
     Revision: "bg-yellow-100 text-yellow-700",
     Aprobado: "bg-green-100 text-green-700",
     Rechazado: "bg-red-100 text-red-700",
+  };
+
+  const deleteTrip = async (id) => {
+  if (!window.confirm("¿Estás seguro de que deseas eliminar este viaje?")) return;
+
+  try {
+    const res = await fetch(`${API_URL}/api/trips/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(await res.text());
+    fetchTrips();
+  } catch (error) {
+    alert("Error al eliminar: " + error.message);
+  }
   };
 
   const fetchTrips = async () => {
@@ -237,29 +249,51 @@ export default function OperationsDashboard() {
                       </button>
                     </td>
 
-                      <td className="px-6 py-6">
-                          <div className="flex justify-center gap-3">
-                            {!isAdmin && (
-                              <>
-                                {trip.status !== 'Aprobado' && (
-                                  <button 
-                                    onClick={() => approveTrip(trip.id)} // Llama a la función de aprobar
-                                    className="p-2 text-gray-300 hover:text-green-500 hover:bg-green-50 rounded-full transition-all"
-                                    title="Aprobar Viaje"
-                                  >
-                                    <Check size={20} />
-                                  </button>
-                                )}
+                      <td className="px-4 py-6 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {!isAdmin && (
+                            <>
+                              {/* EDITAR */}
+                              <button
+                                onClick={() => navigate(`/edit-trip/${trip.id}`)}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="Editar viaje"
+                              >
+                                <Pencil size={18} />
+                              </button>
+
+                              {/* APROBAR */}
+                              {trip.status !== 'Aprobado' && (
                                 <button 
-                                  onClick={() => rejectTrip(trip.id)}
-                                  className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                  onClick={() => approveTrip(trip.id)}
+                                  className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                                  title="Aprobar viaje"
                                 >
-                                  <X size={20} />
+                                  <Check size={18} />
                                 </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
+                              )}
+
+                              {/* RECHAZAR */}
+                              <button 
+                                onClick={() => rejectTrip(trip.id)}
+                                className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all"
+                                title="Rechazar viaje"
+                              >
+                                <X size={18} />
+                              </button>
+
+                              {/* ELIMINAR */}
+                              <button 
+                                onClick={() => deleteTrip(trip.id)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                title="Eliminar viaje"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                   </tr>
                 ))
               )}

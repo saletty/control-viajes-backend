@@ -195,6 +195,49 @@ namespace Control_de_viajes.Controllers
             await _context.SaveChangesAsync();
             return Ok("Viaje rechazado para corrección. Unidades liberadas.");
         }
+        // =========================
+        // EDITAR VIAJE
+        // =========================
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateTrip(int id, [FromBody] Trip updatedTrip)
+        {
+            var trip = await _context.Trips.FindAsync(id);
+            if (trip == null) return NotFound("Viaje no encontrado");
+
+            trip.DriverName = updatedTrip.DriverName;
+            trip.Origin = updatedTrip.Origin;
+            trip.Destination = updatedTrip.Destination;
+            trip.TractoId = updatedTrip.TractoId;
+            trip.SemiremolqueId = updatedTrip.SemiremolqueId;
+            trip.Nro = updatedTrip.Nro;
+
+            await _context.SaveChangesAsync();
+            return Ok("Viaje actualizado correctamente.");
+        }
+
+        // =========================
+        // ELIMINAR VIAJE (Libera camiones si estaban asignados)
+        // =========================
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTrip(int id)
+        {
+            var trip = await _context.Trips.FindAsync(id);
+            if (trip == null) return NotFound("Viaje no encontrado");
+
+            // Liberar unidades si el viaje no estaba finalizado/aprobado
+            if (trip.Status != "Aprobado")
+            {
+                var tracto = await _context.Trucks.FindAsync(trip.TractoId);
+                var semi = await _context.Trucks.FindAsync(trip.SemiremolqueId);
+
+                if (tracto != null) tracto.Estado = "Disponible";
+                if (semi != null) semi.Estado = "Disponible";
+            }
+
+            _context.Trips.Remove(trip);
+            await _context.SaveChangesAsync();
+            return Ok("Viaje eliminado correctamente.");
+        }
 
         // =========================
         // VIAJES DEL CHOFER
