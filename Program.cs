@@ -6,8 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. SOLUCIÓN ERROR INOTIFY EN RENDER (Deshabilitar reloadOnChange)
+builder.Configuration.Sources.Clear();
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
+    .AddEnvironmentVariables();
 
-// 1. CONFIGURACIÓN DE LÍMITES (100MB para Videos)
+// 2. CONFIGURACIÓN DE LÍMITES (100MB para Videos)
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
     options.Limits.MaxRequestBodySize = 100 * 1024 * 1024; // 100MB
@@ -18,29 +24,18 @@ builder.Services.Configure<FormOptions>(options =>
     options.MultipartBodyLengthLimit = 100 * 1024 * 1024; // 100MB
 });
 
-//  CLOUDINARY
+// 3. CLOUDINARY
 builder.Services.AddSingleton(new Cloudinary(new Account(
     builder.Configuration["Cloudinary:CloudName"],
     builder.Configuration["Cloudinary:ApiKey"],
     builder.Configuration["Cloudinary:ApiSecret"]
 )));
 
-//  LIMITES
-builder.Services.Configure<KestrelServerOptions>(options =>
-{
-    options.Limits.MaxRequestBodySize = 100 * 1024 * 1024;
-});
-
-builder.Services.Configure<FormOptions>(options =>
-{
-    options.MultipartBodyLengthLimit = 100 * 1024 * 1024;
-});
-
-// DB
+// 4. Base de Datos PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//  CORS
+// 5. CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("PermitirReact", policy =>
